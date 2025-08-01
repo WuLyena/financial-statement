@@ -1,0 +1,2070 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Analisis Keuangan</title>
+    <!-- Library CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Library JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.3.0/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.37.1/docxtemplater.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.4/pizzip.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f4f7f9;
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --text-color: #2c3e50;
+            --input-bg: #fff;
+            --border-color: #dfe6e9;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --error-color: #e74c3c;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #2c3e50;
+            --primary-color: #ecf0f1;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --text-color: #ecf0f1;
+            --input-bg: #49637e;
+            --border-color: #49637e;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --error-color: #e74c3c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Navbar & Header */
+        .navbar {
+            background-color: var(--secondary-color);
+            color: #fff;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        .navbar h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .navbar .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .navbar .nav-links button {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .navbar .nav-links button.active {
+            background-color: var(--accent-color);
+        }
+
+        .navbar .nav-links button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .dark-mode-toggle {
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: #fff;
+        }
+
+        /* Main Content */
+        main {
+            padding: 20px 0;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .section-card {
+            background-color: var(--input-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-header h2 {
+            font-size: 1.25rem;
+        }
+
+        .section-body {
+            max-height: 1000px;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+
+        .section-body.collapsed {
+            max-height: 0;
+            padding-top: 0;
+            border-bottom: none;
+        }
+
+        .icon {
+            font-size: 1.25rem;
+            transition: transform 0.3s ease;
+        }
+
+        .collapsed .icon {
+            transform: rotate(-90deg);
+        }
+
+        /* Settings */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: center;
+        }
+
+        .settings-grid div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .settings-grid label {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .settings-grid input,
+        .settings-grid select {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .settings-grid button {
+            align-self: flex-end;
+            margin-top: 20px;
+        }
+
+        /* Buttons */
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: #49637e;
+        }
+
+        .btn-danger {
+            background-color: var(--error-color);
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            min-width: 600px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--secondary-color);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] tbody tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        td input {
+            width: 100%;
+            border: none;
+            background: none;
+            color: var(--text-color);
+            font-size: inherit;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        td input:focus {
+            outline: 1px solid var(--accent-color);
+        }
+
+        .table-title {
+            font-weight: bold;
+            background-color: var(--border-color);
+        }
+
+        .table-error {
+            background-color: var(--error-color) !important;
+            color: #fff !important;
+        }
+
+        .invalid-input {
+            border: 2px solid var(--error-color) !important;
+            background-color: rgba(231, 76, 60, 0.2) !important;
+        }
+
+        /* Notifications */
+        #notification-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .notification {
+            background-color: var(--secondary-color);
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.5s ease-out;
+            min-width: 250px;
+        }
+
+        .notification.success {
+            background-color: var(--success-color);
+        }
+
+        .notification.error {
+            background-color: var(--error-color);
+        }
+
+        .notification.warning {
+            background-color: var(--warning-color);
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            max-width: 600px;
+            width: 90%;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .close-button {
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+
+        /* Charts & Ratio Table */
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 15px;
+        }
+
+        .ratio-table {
+            margin-top: 20px;
+        }
+
+        .ratio-table .green {
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        .ratio-table .red {
+            color: var(--error-color);
+            font-weight: bold;
+        }
+
+        /* Analisis & Narasi */
+        #narrative-textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin-top: 10px;
+        }
+
+        .summary-card {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .trend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .trend-icon {
+            font-size: 1.2rem;
+        }
+
+        .trend-up {
+            color: var(--success-color);
+        }
+
+        .trend-down {
+            color: var(--error-color);
+        }
+
+        .trend-stable {
+            color: var(--warning-color);
+        }
+
+        .summary-box {
+            padding: 15px;
+            border-radius: 8px;
+            background-color: var(--secondary-color);
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        /* Responsiveness */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .navbar .nav-links {
+                width: 100%;
+                justify-content: space-between;
+                flex-wrap: wrap;
+            }
+
+            .navbar .nav-links button {
+                flex-grow: 1;
+                text-align: center;
+                padding: 10px 0;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        .chart-lazy {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="navbar">
+        <h1>Analisis Keuangan</h1>
+        <div class="nav-links">
+            <button id="tab-input" class="active"><i class="fas fa-edit"></i> Input Data</button>
+            <button id="tab-dashboard"><i class="fas fa-chart-line"></i> Dashboard</button>
+            <button id="tab-analysis"><i class="fas fa-clipboard-list"></i> Analisis</button>
+            <button id="tab-help"><i class="fas fa-info-circle"></i> Bantuan</button>
+        </div>
+        <i id="dark-mode-toggle" class="fas fa-moon dark-mode-toggle"></i>
+    </header>
+
+    <main class="container">
+        <!-- Tab Input Data -->
+        <div id="input-data-tab" class="tab-content active">
+            <div class="section-card">
+                <div class="section-header" onclick="toggleSection('settings')">
+                    <h2>Pengaturan <i class="fas fa-chevron-down icon"></i></h2>
+                </div>
+                <div id="settings-section" class="section-body">
+                    <div class="settings-grid">
+                        <div>
+                            <label for="start-year">Tahun Awal:</label>
+                            <input type="number" id="start-year" value="2020" min="1900" max="2100">
+                        </div>
+                        <div>
+                            <label for="num-years">Jumlah Tahun:</label>
+                            <input type="number" id="num-years" value="5" min="1" max="10">
+                        </div>
+                        <div>
+                            <label for="industry-select">Industri:</label>
+                            <select id="industry-select">
+                                <option value="Bank">Bank</option>
+                                <option value="Retail">Retail</option>
+                                <option value="Manufaktur">Manufaktur</option>
+                            </select>
+                        </div>
+                        <div class="button-group">
+                            <button id="apply-settings-btn" class="btn"><i class="fas fa-check"></i> Terapkan</button>
+                            <button id="load-dummy-btn" class="btn btn-secondary"><i class="fas fa-database"></i> Isi
+                                Dummy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-header" onclick="toggleSection('data-io')">
+                    <h2>Manajemen Data <i class="fas fa-chevron-down icon"></i></h2>
+                </div>
+                <div id="data-io-section" class="section-body">
+                    <div class="button-group">
+                        <label for="file-input" class="btn btn-secondary"><i class="fas fa-file-upload"></i> Impor
+                            Excel</label>
+                        <input type="file" id="file-input" accept=".xlsx, .xls" style="display: none;">
+                        <button id="export-excel-btn" class="btn btn-secondary"><i class="fas fa-file-excel"></i> Ekspor
+                            Excel</button>
+                        <button id="export-pdf-btn" class="btn btn-secondary"><i class="fas fa-file-pdf"></i> Ekspor
+                            PDF</button>
+                        <button id="export-word-btn" class="btn btn-secondary"><i class="fas fa-file-word"></i> Ekspor
+                            Word</button>
+                        <button id="download-template-btn" class="btn btn-secondary"><i class="fas fa-download"></i>
+                            Unduh Template</button>
+                        <button id="save-snapshot-btn" class="btn btn-secondary"><i class="fas fa-save"></i> Simpan
+                            Snapshot</button>
+                        <label for="load-snapshot-input" class="btn btn-secondary"><i class="fas fa-folder-open"></i>
+                            Muat Snapshot</label>
+                        <input type="file" id="load-snapshot-input" accept=".json" style="display: none;">
+                        <button id="reset-data-btn" class="btn btn-danger"><i class="fas fa-trash-alt"></i> Reset
+                            Data</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="data-tables-container">
+                <!-- Tables will be rendered here -->
+            </div>
+        </div>
+
+        <!-- Tab Dashboard -->
+        <div id="dashboard-tab" class="tab-content">
+            <div class="section-card">
+                <div class="section-header" onclick="toggleSection('ratio-table')">
+                    <h2>Tabel Rasio Keuangan <i class="fas fa-chevron-down icon"></i></h2>
+                </div>
+                <div id="ratio-table-section" class="section-body">
+                    <div class="table-container">
+                        <table id="ratio-table"></table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-header" onclick="toggleSection('chart-options')">
+                    <h2>Opsi Grafik <i class="fas fa-chevron-down icon"></i></h2>
+                </div>
+                <div id="chart-options-section" class="section-body">
+                    <div class="button-group">
+                        <button class="btn btn-small" data-chart-category="profitability">Profitabilitas</button>
+                        <button class="btn btn-small" data-chart-category="solvability">Solvabilitas</button>
+                        <button class="btn btn-small" data-chart-category="liquidity">Likuiditas</button>
+                        <button class="btn btn-small" data-chart-category="activity">Aktivitas</button>
+                    </div>
+                    <div class="button-group">
+                        <button class="btn btn-small" id="export-charts-btn"><i class="fas fa-image"></i> Ekspor Semua
+                            Grafik</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="charts-container" class="section-card">
+                <div id="profitability-chart-container" class="chart-container chart-lazy">
+                    <canvas id="profitability-chart"></canvas>
+                    <button class="btn btn-small btn-secondary" onclick="exportChart('profitability-chart')"><i
+                            class="fas fa-download"></i> Unduh PNG</button>
+                </div>
+                <div id="solvability-chart-container" class="chart-container chart-lazy">
+                    <canvas id="solvability-chart"></canvas>
+                    <button class="btn btn-small btn-secondary" onclick="exportChart('solvability-chart')"><i
+                            class="fas fa-download"></i> Unduh PNG</button>
+                </div>
+                <div id="liquidity-chart-container" class="chart-container chart-lazy">
+                    <canvas id="liquidity-chart"></canvas>
+                    <button class="btn btn-small btn-secondary" onclick="exportChart('liquidity-chart')"><i
+                            class="fas fa-download"></i> Unduh PNG</button>
+                </div>
+                <div id="activity-chart-container" class="chart-container chart-lazy">
+                    <canvas id="activity-chart"></canvas>
+                    <button class="btn btn-small btn-secondary" onclick="exportChart('activity-chart')"><i
+                            class="fas fa-download"></i> Unduh PNG</button>
+                </div>
+                <div id="bar-chart-container" class="chart-container chart-lazy">
+                    <canvas id="bar-chart"></canvas>
+                    <button class="btn btn-small btn-secondary" onclick="exportChart('bar-chart')"><i
+                            class="fas fa-download"></i> Unduh PNG</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Analisis -->
+        <div id="analysis-tab" class="tab-content">
+            <div class="section-card">
+                <div class="section-header" onclick="toggleSection('analysis-summary')">
+                    <h2>Ringkasan Kinerja & Tren <i class="fas fa-chevron-down icon"></i></h2>
+                </div>
+                <div id="analysis-summary-section" class="section-body">
+                    <div class="summary-card" id="performance-summary">
+                        <!-- Summary will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-header" onclick="toggleSection('narrative-section')">
+                    <h2>Narasi Analisis <i class="fas fa-chevron-down icon"></i></h2>
+                </div>
+                <div id="narrative-section" class="section-body">
+                    <div class="button-group">
+                        <button id="generate-narasi-btn" class="btn"><i class="fas fa-magic"></i> Generate Narasi
+                            Otomatis</button>
+                    </div>
+                    <textarea id="narrative-textarea" placeholder="Tulis narasi analisis Anda di sini..."></textarea>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Panduan Penggunaan</h2>
+                <span class="close-button" onclick="closeModal('help-modal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p><strong>1. Input Data:</strong> Masukkan data keuangan secara manual di tabel atau impor dari file
+                    Excel. Pastikan format Excel sesuai template.</p>
+                <p><strong>2. Dashboard:</strong> Lihat rasio keuangan dan grafik tren. Rasio akan dibandingkan dengan
+                    benchmark industri. Anda bisa mengunduh grafik sebagai gambar.</p>
+                <p><strong>3. Analisis:</strong> Tinjau ringkasan kinerja dan buat narasi analisis Anda sendiri atau
+                    gunakan fitur narasi otomatis.</p>
+                <p><strong>4. Manajemen Data:</strong> Gunakan tombol untuk menyimpan, memuat, atau mereset data Anda.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spinner -->
+    <div id="spinner"
+        style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1002;"><i
+            class="fas fa-spinner fa-spin fa-3x"></i></div>
+
+    <script>
+        // ====================================================================
+        // ========================= KODE JAVASCRIPT ==========================
+        // ====================================================================
+
+        // Konfigurasi dan Data Awal
+        const CONFIG = {
+            MAX_YEARS: 10,
+            MAX_VALUE_GENERAL: 1e12,
+            MAX_VALUE_NET_INCOME: 1e13,
+            DEBOUNCE_DELAY: 300,
+            // Benchmark industri
+            INDUSTRIES: {
+                Bank: {
+                    GPM: 0.6, ROE: 0.15, ROA: 0.02, NPM: 0.1, OPM: 0.2,
+                    DER: 10, DTA: 0.9, ICR: 5,
+                    CR: 1.5, QR: 1,
+                    TAT: 0.2, INV: 0
+                },
+                Retail: {
+                    GPM: 0.3, ROE: 0.2, ROA: 0.05, NPM: 0.08, OPM: 0.12,
+                    DER: 2, DTA: 0.6, ICR: 3,
+                    CR: 2, QR: 1.5,
+                    TAT: 1.5, INV: 5
+                },
+                Manufaktur: {
+                    GPM: 0.4, ROE: 0.18, ROA: 0.06, NPM: 0.1, OPM: 0.15,
+                    DER: 1.5, DTA: 0.5, ICR: 4,
+                    CR: 1.8, QR: 1.2,
+                    TAT: 1.2, INV: 4
+                }
+            },
+            // Deskripsi Rasio
+            RATIO_DESCRIPTIONS: {
+                GPM: "Gross Profit Margin (Margin Laba Kotor)",
+                ROE: "Return on Equity (Pengembalian Ekuitas)",
+                ROA: "Return on Assets (Pengembalian Aset)",
+                NPM: "Net Profit Margin (Margin Laba Bersih)",
+                OPM: "Operating Profit Margin (Margin Laba Operasi)",
+                DER: "Debt to Equity Ratio (Rasio Utang terhadap Ekuitas)",
+                DTA: "Debt to Assets Ratio (Rasio Utang terhadap Aset)",
+                ICR: "Interest Coverage Ratio (Rasio Cakupan Bunga)",
+                CR: "Current Ratio (Rasio Lancar)",
+                QR: "Quick Ratio (Rasio Cepat)",
+                TAT: "Total Asset Turnover (Perputaran Total Aset)",
+                INV: "Inventory Turnover (Perputaran Persediaan)"
+            },
+            // Pos-pos yang tidak boleh negatif
+            NON_NEGATIVE_ITEMS: [
+                'Kas dan Setara Kas', 'Piutang Usaha', 'Persediaan', 'Aset Lancar Lainnya', 'Total Aset Lancar',
+                'Aset Tetap (Bersih)', 'Aset Tidak Berwujud', 'Aset Lainnya', 'Total Aset',
+                'Utang Usaha', 'Utang Jangka Pendek Lainnya', 'Total Utang Jangka Pendek',
+                'Utang Jangka Panjang', 'Total Utang Jangka Panjang', 'Total Liabilitas',
+                'Modal Disetor', 'Saldo Laba', 'Total Ekuitas', 'Penjualan Bersih',
+                'Beban Pokok Penjualan', 'Beban Umum dan Administrasi',
+                'Arus Kas dari Operasi', 'Arus Kas dari Investasi', 'Arus Kas dari Pendanaan',
+                'Kas Akhir'
+            ],
+            // Daftar pos-pos akun
+            FINANCIAL_ITEMS: {
+                neraca: [
+                    { id: 'kas', label: 'Kas dan Setara Kas' },
+                    { id: 'piutang', label: 'Piutang Usaha' },
+                    { id: 'persediaan', label: 'Persediaan' },
+                    { id: 'asetLancarLainnya', label: 'Aset Lancar Lainnya' },
+                    { id: 'totalAsetLancar', label: 'Total Aset Lancar', isTotal: true },
+                    { id: 'asetTetap', label: 'Aset Tetap (Bersih)' },
+                    { id: 'asetTidakBerwujud', label: 'Aset Tidak Berwujud' },
+                    { id: 'asetLainnya', label: 'Aset Lainnya' },
+                    { id: 'totalAset', label: 'Total Aset', isTotal: true },
+                    { id: 'utangUsaha', label: 'Utang Usaha' },
+                    { id: 'utangPendekLainnya', label: 'Utang Jangka Pendek Lainnya' },
+                    { id: 'totalUtangPendek', label: 'Total Utang Jangka Pendek', isTotal: true },
+                    { id: 'utangJangkaPanjang', label: 'Utang Jangka Panjang' },
+                    { id: 'totalUtangJangkaPanjang', label: 'Total Utang Jangka Panjang', isTotal: true },
+                    { id: 'totalLiabilitas', label: 'Total Liabilitas', isTotal: true },
+                    { id: 'modalDisetor', label: 'Modal Disetor' },
+                    { id: 'saldoLaba', label: 'Saldo Laba' },
+                    { id: 'totalEkuitas', label: 'Total Ekuitas', isTotal: true },
+                    { id: 'totalLiabilitasEkuitas', label: 'Total Liabilitas + Ekuitas', isTotal: true },
+                ],
+                labaRugi: [
+                    { id: 'penjualanBersih', label: 'Penjualan Bersih' },
+                    { id: 'bebanPokokPenjualan', label: 'Beban Pokok Penjualan' },
+                    { id: 'labaKotor', label: 'Laba Kotor', isTotal: true },
+                    { id: 'bebanUmum', label: 'Beban Umum dan Administrasi' },
+                    { id: 'labaOperasi', label: 'Laba Operasi', isTotal: true },
+                    { id: 'bebanBunga', label: 'Beban Bunga' },
+                    { id: 'labaSebelumPajak', label: 'Laba Sebelum Pajak', isTotal: true },
+                    { id: 'bebanPajak', label: 'Beban Pajak' },
+                    { id: 'labaBersih', label: 'Laba Bersih', isTotal: true },
+                ],
+                arusKas: [
+                    { id: 'kasAwal', label: 'Kas Awal' },
+                    { id: 'kasOperasi', label: 'Arus Kas dari Operasi' },
+                    { id: 'kasInvestasi', label: 'Arus Kas dari Investasi' },
+                    { id: 'kasPendanaan', label: 'Arus Kas dari Pendanaan' },
+                    { id: 'kasAkhir', label: 'Kas Akhir', isTotal: true },
+                ]
+            }
+        };
+
+        const INITIAL_DATA = {
+            neraca: {},
+            labaRugi: {},
+            arusKas: {}
+        };
+
+        // Global State
+        let state = {
+            startYear: 2020,
+            numYears: 5,
+            industry: 'Manufaktur',
+            data: JSON.parse(JSON.stringify(INITIAL_DATA)),
+            narrative: '',
+            inputErrors: {},
+            balanceSheetError: {},
+            visibleCharts: {
+                profitability: true,
+                solvability: true,
+                liquidity: true,
+                activity: true,
+                bar: false
+            },
+            collapsedSections: {
+                settings: false,
+                dataIo: false,
+                ratioTable: false,
+                chartOptions: false,
+                analysisSummary: false,
+                narrativeSection: false
+            }
+        };
+
+        let charts = {};
+        let debounceTimer;
+
+        // === Utilitas ===
+
+        /**
+         * Mengelola Web Worker untuk operasi impor/ekspor file yang berat.
+         */
+        function createWorker(workerFunction) {
+            const workerCode = `
+        self.onmessage = (event) => {
+            const result = (${workerFunction.toString()})(event.data);
+            self.postMessage(result);
+        };
+    `;
+            const blob = new Blob([workerCode], { type: 'text/javascript' });
+            return new Worker(URL.createObjectURL(blob));
+        }
+
+        /**
+         * Fungsi debounce untuk menunda eksekusi fungsi.
+         */
+        const debounce = (func, delay) => {
+            return (...args) => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => func(...args), delay);
+            };
+        };
+
+        /**
+         * Menampilkan notifikasi.
+         */
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `<i class="fas fa-bell"></i> <span>${message}</span>`;
+            container.appendChild(notification);
+            setTimeout(() => {
+                notification.style.animation = 'fadeOut 0.5s forwards';
+                setTimeout(() => notification.remove(), 500);
+            }, 5000);
+        }
+
+        /**
+         * Mengubah format angka menjadi mata uang (IDR).
+         */
+        function formatCurrency(number) {
+            if (isNaN(number) || number === null) return '-';
+            const formatted = new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            }).format(number);
+            return formatted.replace(/\s/g, ''); // Hapus spasi setelah simbol mata uang
+        }
+
+        /**
+         * Membuka modal.
+         */
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            modal.style.display = 'flex';
+        }
+
+        /**
+         * Menutup modal.
+         */
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            modal.style.display = 'none';
+        }
+
+        /**
+         * Mengubah mode gelap/terang.
+         */
+        function toggleDarkMode() {
+            const isDarkMode = document.body.getAttribute('data-theme') === 'dark';
+            document.body.setAttribute('data-theme', isDarkMode ? '' : 'dark');
+            document.getElementById('dark-mode-toggle').className = isDarkMode ? 'fas fa-moon dark-mode-toggle' : 'fas fa-sun dark-mode-toggle';
+            localStorage.setItem('theme', isDarkMode ? 'light' : 'dark');
+        }
+
+        /**
+         * Toggle kolaps bagian UI.
+         */
+        function toggleSection(id) {
+            const sectionBody = document.getElementById(id + '-section');
+            const isCollapsed = sectionBody.classList.toggle('collapsed');
+            state.collapsedSections[id] = isCollapsed;
+            saveStateToLocal();
+        }
+
+        /**
+         * Menampilkan atau menyembunyikan spinner.
+         */
+        function showSpinner(show) {
+            document.getElementById('spinner').style.display = show ? 'flex' : 'none';
+        }
+
+        // === Manajemen State & Penyimpanan Lokal ===
+        function saveStateToLocal() {
+            localStorage.setItem('finApp_state', JSON.stringify(state));
+        }
+
+        function loadStateFromLocal() {
+            const savedState = localStorage.getItem('finApp_state');
+            if (savedState) {
+                state = JSON.parse(savedState);
+            }
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.setAttribute('data-theme', 'dark');
+                document.getElementById('dark-mode-toggle').className = 'fas fa-sun dark-mode-toggle';
+            }
+        }
+
+        // === Perhitungan & Validasi ===
+
+        /**
+         * Perhitungan otomatis item total dan laba bersih.
+         */
+        function autoCalculate() {
+            for (let i = 0; i < state.numYears; i++) {
+                // Laba Rugi
+                const lr = state.data.labaRugi[`year_${i}`];
+                if (lr) {
+                    lr.labaKotor = (lr.penjualanBersih || 0) - (lr.bebanPokokPenjualan || 0);
+                    lr.labaOperasi = lr.labaKotor - (lr.bebanUmum || 0);
+                    lr.labaSebelumPajak = lr.labaOperasi - (lr.bebanBunga || 0);
+                    lr.labaBersih = lr.labaSebelumPajak - (lr.bebanPajak || 0);
+                }
+
+                // Neraca
+                const neraca = state.data.neraca[`year_${i}`];
+                if (neraca) {
+                    neraca.totalAsetLancar = (neraca.kas || 0) + (neraca.piutang || 0) + (neraca.persediaan || 0) + (neraca.asetLancarLainnya || 0);
+                    neraca.totalAset = neraca.totalAsetLancar + (neraca.asetTetap || 0) + (neraca.asetTidakBerwujud || 0) + (neraca.asetLainnya || 0);
+                    neraca.totalUtangPendek = (neraca.utangUsaha || 0) + (neraca.utangPendekLainnya || 0);
+                    neraca.totalUtangJangkaPanjang = neraca.utangJangkaPanjang || 0;
+                    neraca.totalLiabilitas = neraca.totalUtangPendek + neraca.totalUtangJangkaPanjang;
+                    neraca.totalEkuitas = (neraca.modalDisetor || 0) + (neraca.saldoLaba || 0);
+                    neraca.totalLiabilitasEkuitas = neraca.totalLiabilitas + neraca.totalEkuitas;
+                }
+
+                // Arus Kas
+                const arusKas = state.data.arusKas[`year_${i}`];
+                if (arusKas) {
+                    arusKas.kasAkhir = (arusKas.kasAwal || 0) + (arusKas.kasOperasi || 0) + (arusKas.kasInvestasi || 0) + (arusKas.kasPendanaan || 0);
+                }
+            }
+            validateAllData();
+        }
+
+        /**
+         * Validasi semua data dan perbarui state error.
+         */
+        function validateAllData() {
+            state.inputErrors = {};
+            state.balanceSheetError = {};
+
+            for (let i = 0; i < state.numYears; i++) {
+                const year = state.startYear + i;
+                const yearKey = `year_${i}`;
+
+                // Validasi Neraca
+                const neraca = state.data.neraca[yearKey];
+                if (neraca && neraca.totalAset !== neraca.totalLiabilitasEkuitas) {
+                    state.balanceSheetError[yearKey] = `Neraca tidak seimbang di tahun ${year}. Total Aset (${formatCurrency(neraca.totalAset)}) tidak sama dengan Total Liabilitas + Ekuitas (${formatCurrency(neraca.totalLiabilitasEkuitas)}).`;
+                } else {
+                    delete state.balanceSheetError[yearKey];
+                }
+
+                // Validasi Laba Bersih negatif berturut-turut
+                const lrCurrent = state.data.labaRugi[yearKey];
+                const lrPrev = state.data.labaRugi[`year_${i - 1}`];
+                if (lrCurrent && lrPrev && lrCurrent.labaBersih < 0 && lrPrev.labaBersih < 0) {
+                    state.balanceSheetError[yearKey] = `Laba Bersih negatif selama dua tahun berturut-turut (${year - 1} dan ${year}).`;
+                }
+
+                // Validasi input individual
+                const items = CONFIG.FINANCIAL_ITEMS.neraca.concat(CONFIG.FINANCIAL_ITEMS.labaRugi).concat(CONFIG.FINANCIAL_ITEMS.arusKas);
+                items.forEach(item => {
+                    const val = state.data[item.isTotal ? 'neraca' : 'neraca'][yearKey]?.[item.id] ||
+                        state.data[item.isTotal ? 'labaRugi' : 'labaRugi'][yearKey]?.[item.id] ||
+                        state.data[item.isTotal ? 'arusKas' : 'arusKas'][yearKey]?.[item.id];
+
+                    if (val === null || val === undefined) return;
+                    const isNonNegative = CONFIG.NON_NEGATIVE_ITEMS.includes(item.label);
+                    const isNetIncome = item.id === 'labaBersih';
+
+                    if (isNonNegative && !isNetIncome && val < 0) {
+                        state.inputErrors[`${item.id}_${yearKey}`] = `Nilai ${item.label} tidak boleh negatif.`;
+                    } else if (val > CONFIG.MAX_VALUE_NET_INCOME) {
+                        state.inputErrors[`${item.id}_${yearKey}`] = `Nilai terlalu besar, melebihi ${formatCurrency(CONFIG.MAX_VALUE_NET_INCOME)}.`;
+                    }
+                });
+            }
+
+            renderTables();
+            renderAll();
+        }
+
+        /**
+         * Menghitung semua rasio keuangan.
+         */
+        function calculateRatios() {
+            const ratios = {
+                profitability: [], solvability: [], liquidity: [], activity: []
+            };
+            const years = Array.from({ length: state.numYears }, (_, i) => state.startYear + i);
+
+            years.forEach((year, i) => {
+                const yearKey = `year_${i}`;
+                const neraca = state.data.neraca[yearKey] || {};
+                const labaRugi = state.data.labaRugi[yearKey] || {};
+                const neracaPrev = state.data.neraca[`year_${i - 1}`] || {};
+                const labaRugiPrev = state.data.labaRugi[`year_${i - 1}`] || {};
+
+                const penBersih = labaRugi.penjualanBersih || 0;
+                const bebanPokok = labaRugi.bebanPokokPenjualan || 0;
+                const labaBersih = labaRugi.labaBersih || 0;
+                const labaOperasi = labaRugi.labaOperasi || 0;
+                const totalAset = neraca.totalAset || 0;
+                const totalUtang = (neraca.totalLiabilitas || 0);
+                const ekuitas = neraca.totalEkuitas || 0;
+                const bebanBunga = labaRugi.bebanBunga || 0;
+                const asetLancar = neraca.totalAsetLancar || 0;
+                const utangPendek = neraca.totalUtangPendek || 0;
+                const persediaan = neraca.persediaan || 0;
+                const avgPersediaan = (persediaan + (neracaPrev.persediaan || 0)) / 2;
+                const avgTotalAset = (totalAset + (neracaPrev.totalAset || 0)) / 2;
+                const avgEkuitas = (ekuitas + (neracaPrev.totalEkuitas || 0)) / 2;
+
+                const yearRatios = {
+                    year,
+                    GPM: (penBersih - bebanPokok) / penBersih,
+                    ROE: labaBersih / avgEkuitas,
+                    ROA: labaBersih / avgTotalAset,
+                    NPM: labaBersih / penBersih,
+                    OPM: labaOperasi / penBersih,
+                    DER: totalUtang / ekuitas,
+                    DTA: totalUtang / totalAset,
+                    ICR: (labaOperasi + bebanBunga) / bebanBunga,
+                    CR: asetLancar / utangPendek,
+                    QR: (asetLancar - persediaan) / utangPendek,
+                    TAT: penBersih / avgTotalAset,
+                    INV: bebanPokok / avgPersediaan,
+                };
+
+                // Pastikan tidak ada NaN atau Infinity
+                Object.keys(yearRatios).forEach(key => {
+                    if (isNaN(yearRatios[key]) || !isFinite(yearRatios[key])) {
+                        yearRatios[key] = 0;
+                    }
+                });
+
+                ratios.profitability.push({ ...yearRatios, category: 'profitability' });
+                ratios.solvability.push({ ...yearRatios, category: 'solvability' });
+                ratios.liquidity.push({ ...yearRatios, category: 'liquidity' });
+                ratios.activity.push({ ...yearRatios, category: 'activity' });
+            });
+
+            return ratios;
+        }
+
+        // === Fungsi Render UI ===
+
+        /**
+         * Merender tabel input.
+         */
+        function renderTables() {
+            const container = document.getElementById('data-tables-container');
+            container.innerHTML = '';
+            const years = Array.from({ length: state.numYears }, (_, i) => state.startYear + i);
+
+            ['neraca', 'labaRugi', 'arusKas'].forEach(sheetName => {
+                const tableCard = document.createElement('div');
+                tableCard.className = 'section-card';
+                const title = { 'neraca': 'Neraca', 'labaRugi': 'Laporan Laba Rugi', 'arusKas': 'Laporan Arus Kas' }[sheetName];
+                tableCard.innerHTML = `
+            <div class="section-header" onclick="toggleSection('table-${sheetName}')">
+                <h2>${title} <i class="fas fa-chevron-down icon"></i></h2>
+            </div>
+            <div id="table-${sheetName}-section" class="section-body">
+                <div class="table-container">
+                    <table id="${sheetName}-table">
+                        <thead>
+                            <tr>
+                                <th>Pos Akun</th>
+                                ${years.map(year => `<th data-year="${year}">${year}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+                container.appendChild(tableCard);
+
+                const tbody = tableCard.querySelector('tbody');
+                const items = CONFIG.FINANCIAL_ITEMS[sheetName];
+
+                items.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${item.label}</td>`;
+                    if (item.isTotal) {
+                        tr.className = 'table-title';
+                    }
+                    if (state.balanceSheetError[`year_${years.indexOf(state.startYear)}`]) {
+                        if (item.id === 'totalAset' || item.id === 'totalLiabilitasEkuitas') {
+                            tr.classList.add('table-error');
+                        }
+                    }
+
+                    years.forEach((year, i) => {
+                        const yearKey = `year_${i}`;
+                        const value = state.data[sheetName][yearKey]?.[item.id];
+                        const displayValue = value !== undefined ? value.toLocaleString('id-ID') : '';
+                        const cellId = `${item.id}_${yearKey}`;
+                        const error = state.inputErrors[cellId];
+
+                        let td = '';
+                        if (item.isTotal) {
+                            td = `<td data-id="${item.id}" data-year-key="${yearKey}">${formatCurrency(value)}</td>`;
+                        } else {
+                            td = `<td><input 
+                            type="text" 
+                            value="${displayValue}" 
+                            data-sheet="${sheetName}" 
+                            data-id="${item.id}" 
+                            data-year-key="${yearKey}" 
+                            ${error ? `class="invalid-input" title="${error}"` : ''}>
+                          </td>`;
+                        }
+                        tr.innerHTML += td;
+                    });
+                    tbody.appendChild(tr);
+                });
+
+                // Tampilkan pesan error neraca di bawah tabel
+                const balanceErrorDiv = document.createElement('div');
+                balanceErrorDiv.id = `balance-error-${sheetName}`;
+                balanceErrorDiv.style.color = 'var(--error-color)';
+                balanceErrorDiv.style.padding = '10px 0';
+                tableCard.querySelector('.section-body').appendChild(balanceErrorDiv);
+            });
+
+            attachTableListeners();
+            updateBalanceSheetErrorDisplay();
+        }
+
+        /**
+         * Menambahkan event listener ke tabel.
+         */
+        function attachTableListeners() {
+            document.querySelectorAll('.table-container table').forEach(table => {
+                table.addEventListener('input', (e) => {
+                    if (e.target.tagName === 'INPUT') {
+                        const { sheet, id, yearKey } = e.target.dataset;
+                        const value = e.target.value.replace(/[^0-9]/g, '');
+                        state.data[sheet][yearKey][id] = value ? parseFloat(value) : 0;
+                        debounce(() => {
+                            autoCalculate();
+                            saveStateToLocal();
+                        }, CONFIG.DEBOUNCE_DELAY)();
+                    }
+                });
+
+                // Navigasi keyboard
+                table.addEventListener('keydown', (e) => {
+                    const input = e.target;
+                    if (input.tagName !== 'INPUT') return;
+                    const currentRow = input.closest('tr');
+                    const currentCellIndex = Array.from(currentRow.querySelectorAll('td input')).indexOf(input);
+
+                    if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        const nextRow = currentRow.nextElementSibling;
+                        if (nextRow) {
+                            const nextInput = nextRow.querySelectorAll('td input')[currentCellIndex];
+                            if (nextInput) nextInput.focus();
+                        }
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        const prevRow = currentRow.previousElementSibling;
+                        if (prevRow) {
+                            const prevInput = prevRow.querySelectorAll('td input')[currentCellIndex];
+                            if (prevInput) prevInput.focus();
+                        }
+                    } else if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        const nextInput = input.closest('td').nextElementSibling?.querySelector('input');
+                        if (nextInput) nextInput.focus();
+                    } else if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        const prevInput = input.closest('td').previousElementSibling?.querySelector('input');
+                        if (prevInput) prevInput.focus();
+                    }
+                });
+            });
+        }
+
+        /**
+         * Memperbarui tampilan pesan error neraca.
+         */
+        function updateBalanceSheetErrorDisplay() {
+            const errorDivs = document.querySelectorAll('[id^="balance-error-"]');
+            errorDivs.forEach(div => div.innerHTML = '');
+            Object.keys(state.balanceSheetError).forEach(yearKey => {
+                const year = state.startYear + parseInt(yearKey.split('_')[1]);
+                const errorDiv = document.getElementById('balance-error-neraca');
+                if (errorDiv) {
+                    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${state.balanceSheetError[yearKey]}`;
+                    // Highlight tabel neraca
+                    const neracaTable = document.getElementById('neraca-table');
+                    const totalAsetRow = neracaTable.querySelector(`[data-id="totalAset"]`).closest('tr');
+                    const totalLiabEqRow = neracaTable.querySelector(`[data-id="totalLiabilitasEkuitas"]`).closest('tr');
+                    if (totalAsetRow) totalAsetRow.classList.add('table-error');
+                    if (totalLiabEqRow) totalLiabEqRow.classList.add('table-error');
+                }
+            });
+        }
+
+        /**
+         * Merender tabel rasio.
+         */
+        function renderRatioTable() {
+            const table = document.getElementById('ratio-table');
+            const years = Array.from({ length: state.numYears }, (_, i) => state.startYear + i);
+            const ratios = calculateRatios();
+            const allRatios = [].concat(...Object.values(ratios));
+            const benchmark = CONFIG.INDUSTRIES[state.industry];
+
+            let tableHTML = `
+        <thead>
+            <tr>
+                <th>Rasio</th>
+                ${years.map(year => `<th>${year}</th>`).join('')}
+                <th>Benchmark (${state.industry})</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+
+            const uniqueRatioNames = Array.from(new Set(Object.keys(benchmark)));
+            uniqueRatioNames.forEach(ratioName => {
+                tableHTML += `<tr><td>${CONFIG.RATIO_DESCRIPTIONS[ratioName]}</td>`;
+                years.forEach((year, i) => {
+                    const ratioValue = allRatios[i][ratioName];
+                    const ratioBenchmark = benchmark[ratioName];
+                    const isGood = ratioValue > ratioBenchmark;
+                    const colorClass = isGood ? 'green' : 'red';
+
+                    tableHTML += `<td class="${colorClass}">${(ratioValue * 100).toFixed(2)}%</td>`;
+                });
+                tableHTML += `<td>${(benchmark[ratioName] * 100).toFixed(2)}%</td></tr>`;
+            });
+
+            tableHTML += '</tbody>';
+            table.innerHTML = tableHTML;
+        }
+
+        /**
+         * Merender grafik dengan Chart.js (lazy loading).
+         */
+        function renderCharts() {
+            const years = Array.from({ length: state.numYears }, (_, i) => state.startYear + i);
+            const ratios = calculateRatios();
+            const benchmark = CONFIG.INDUSTRIES[state.industry];
+
+            const chartConfigs = [
+                { id: 'profitability-chart', title: 'Rasio Profitabilitas', labels: ['GPM', 'ROE', 'ROA', 'NPM', 'OPM'], category: 'profitability' },
+                { id: 'solvability-chart', title: 'Rasio Solvabilitas', labels: ['DER', 'DTA', 'ICR'], category: 'solvability' },
+                { id: 'liquidity-chart', title: 'Rasio Likuiditas', labels: ['CR', 'QR'], category: 'liquidity' },
+                { id: 'activity-chart', title: 'Rasio Aktivitas', labels: ['TAT', 'INV'], category: 'activity' },
+            ];
+
+            // Bar Chart untuk perbandingan benchmark
+            if (state.visibleCharts.bar) {
+                const barChartCanvas = document.getElementById('bar-chart');
+                const barChartContainer = document.getElementById('bar-chart-container');
+                barChartContainer.style.display = 'block';
+
+                const lastYearRatios = ratios.profitability[ratios.profitability.length - 1] || {};
+                const ratioNames = Object.keys(CONFIG.RATIO_DESCRIPTIONS);
+                const data = ratioNames.map(name => (lastYearRatios[name] || 0));
+                const benchmarkData = ratioNames.map(name => (benchmark[name] || 0));
+
+                if (charts['bar-chart']) charts['bar-chart'].destroy();
+                charts['bar-chart'] = new Chart(barChartCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: ratioNames.map(name => CONFIG.RATIO_DESCRIPTIONS[name]),
+                        datasets: [
+                            {
+                                label: `Rasio Tahun ${state.startYear + state.numYears - 1}`,
+                                data: data.map(v => (v * 100).toFixed(2)),
+                                backgroundColor: 'rgba(52, 152, 219, 0.8)'
+                            },
+                            {
+                                label: `Benchmark ${state.industry}`,
+                                data: benchmarkData.map(v => (v * 100).toFixed(2)),
+                                backgroundColor: 'rgba(44, 62, 80, 0.8)'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Perbandingan Rasio dengan Benchmark',
+                                font: { size: 16 }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Persentase (%)'
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                document.getElementById('bar-chart-container').style.display = 'none';
+            }
+
+
+            chartConfigs.forEach(config => {
+                const container = document.getElementById(config.id + '-container');
+                const canvas = document.getElementById(config.id);
+
+                if (state.visibleCharts[config.category]) {
+                    container.style.display = 'block';
+
+                    if (charts[config.id]) charts[config.id].destroy();
+
+                    const datasets = config.labels.map(label => {
+                        const ratioValues = ratios.profitability.map(r => r[label]);
+                        const benchmarkValue = benchmark[label];
+
+                        // Warna garis acak tapi konsisten
+                        const hue = label.charCodeAt(0) * 137 % 360;
+                        const color = `hsl(${hue}, 70%, 50%)`;
+
+                        return {
+                            label: CONFIG.RATIO_DESCRIPTIONS[label],
+                            data: ratioValues.map(v => (v * 100).toFixed(2)),
+                            borderColor: color,
+                            tension: 0.1,
+                            fill: false,
+                        };
+                    });
+
+                    // Tambah garis benchmark
+                    datasets.push({
+                        label: `Benchmark ${state.industry}`,
+                        data: years.map(() => (benchmark[config.labels[0]] * 100).toFixed(2)),
+                        borderColor: 'var(--text-color)',
+                        borderDash: [5, 5],
+                        pointStyle: false,
+                        tension: 0,
+                        label: `Benchmark (${state.industry})`,
+                        hidden: true, // Sembunyikan secara default
+                    });
+
+                    charts[config.id] = new Chart(canvas, {
+                        type: 'line',
+                        data: {
+                            labels: years,
+                            datasets: datasets
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: config.title,
+                                    font: { size: 16 }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Persentase (%)'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    container.style.display = 'none';
+                }
+            });
+        }
+
+        /**
+         * Merender ringkasan analisis.
+         */
+        function renderAnalysisSummary() {
+            const container = document.getElementById('performance-summary');
+            container.innerHTML = '';
+            const ratios = calculateRatios();
+            const benchmark = CONFIG.INDUSTRIES[state.industry];
+
+            // Rata-rata ROE
+            const roeRatios = ratios.profitability.map(r => r.ROE);
+            const avgRoe = roeRatios.reduce((sum, val) => sum + val, 0) / roeRatios.length;
+            const isAboveRoe = avgRoe > benchmark.ROE;
+            const roeStatus = isAboveRoe ? 'di atas' : 'di bawah';
+            const roeColor = isAboveRoe ? 'var(--success-color)' : 'var(--error-color)';
+            const roeIcon = isAboveRoe ? 'fa-arrow-up' : 'fa-arrow-down';
+
+            const summaryHtml = `
+        <div class="summary-box">
+            <h3>Ringkasan Kinerja</h3>
+            <div class="trend-item" style="color: ${roeColor};">
+                <i class="fas ${roeIcon} trend-icon"></i>
+                <p>Rata-rata ROE: <strong>${(avgRoe * 100).toFixed(2)}%</strong> (${roeStatus} benchmark ${state.industry})</p>
+            </div>
+        </div>
+        <div class="summary-box">
+            <h3>Analisis Tren Rasio</h3>
+            <div class="summary-card">
+                ${Object.keys(CONFIG.RATIO_DESCRIPTIONS).map(ratioName => {
+                const firstValue = ratios.profitability[0][ratioName];
+                const lastValue = ratios.profitability[state.numYears - 1][ratioName];
+                let trend = 'stabil';
+                let icon = 'fa-equals';
+                let color = 'var(--warning-color)';
+
+                if (lastValue > firstValue * 1.05) {
+                    trend = 'meningkat';
+                    icon = 'fa-arrow-up';
+                    color = 'var(--success-color)';
+                } else if (lastValue < firstValue * 0.95) {
+                    trend = 'menurun';
+                    icon = 'fa-arrow-down';
+                    color = 'var(--error-color)';
+                }
+
+                return `
+                        <div class="trend-item" style="color: ${color};">
+                            <i class="fas ${icon} trend-icon"></i>
+                            <p>Tren ${CONFIG.RATIO_DESCRIPTIONS[ratioName]}: <strong>${trend}</strong></p>
+                        </div>
+                    `;
+            }).join('')}
+            </div>
+        </div>
+    `;
+            container.innerHTML = summaryHtml;
+        }
+
+        /**
+         * Merender semua komponen UI.
+         */
+        function renderAll() {
+            renderTables();
+            if (document.getElementById('dashboard-tab').classList.contains('active')) {
+                renderRatioTable();
+                renderCharts();
+            }
+            if (document.getElementById('analysis-tab').classList.contains('active')) {
+                renderAnalysisSummary();
+            }
+        }
+
+        // === Fungsi Impor/Ekspor Data ===
+
+        /**
+         * Import data dari file Excel.
+         */
+        function handleImportExcel() {
+            showSpinner(true);
+            const file = this.files[0];
+            if (!file) {
+                showNotification('Tidak ada file yang dipilih.', 'warning');
+                showSpinner(false);
+                return;
+            }
+
+            const worker = createWorker((data) => {
+                const { file } = data;
+                const reader = new FileReader();
+                return new Promise((resolve, reject) => {
+                    reader.onload = function (e) {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+
+                            const sheets = ['Neraca', 'Laba Rugi', 'Arus Kas'];
+                            const importedData = { neraca: {}, labaRugi: {}, arusKas: {} };
+                            let errors = [];
+                            let years = [];
+
+                            sheets.forEach(sheetName => {
+                                const worksheet = workbook.Sheets[sheetName];
+                                if (!worksheet) {
+                                    errors.push(`Sheet "${sheetName}" tidak ditemukan.`);
+                                    return;
+                                }
+                                const sheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                                if (sheetData.length === 0) return;
+
+                                // Ambil tahun dari header
+                                const headerRow = sheetData[0];
+                                if (years.length === 0) {
+                                    years = headerRow.slice(1).filter(y => !isNaN(parseInt(y)) && y !== null).map(y => parseInt(y));
+                                    if (years.length === 0 || years.length > 10) {
+                                        errors.push('Header tahun tidak valid atau terlalu banyak (maks 10 tahun).');
+                                    }
+                                }
+
+                                const items = CONFIG.FINANCIAL_ITEMS[sheetName.toLowerCase().replace(/\s/g, '')];
+                                const yearKeys = years.map((_, i) => `year_${i}`);
+
+                                for (let i = 1; i < sheetData.length; i++) {
+                                    const row = sheetData[i];
+                                    const posAkun = row[0];
+                                    const item = items.find(it => it.label === posAkun);
+                                    if (item) {
+                                        years.forEach((year, j) => {
+                                            const value = parseFloat(row[j + 1]);
+                                            const yearKey = yearKeys[j];
+                                            if (!importedData[sheetName.toLowerCase().replace(/\s/g, '')][yearKey]) {
+                                                importedData[sheetName.toLowerCase().replace(/\s/g, '')][yearKey] = {};
+                                            }
+                                            if (!isNaN(value)) {
+                                                importedData[sheetName.toLowerCase().replace(/\s/g, '')][yearKey][item.id] = value;
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+
+                            if (errors.length > 0) {
+                                reject(errors);
+                            } else {
+                                resolve({ importedData, startYear: years[0], numYears: years.length });
+                            }
+                        } catch (e) {
+                            reject([`Gagal memproses file: ${e.message}`]);
+                        }
+                    };
+                    reader.onerror = (e) => reject([`Gagal membaca file: ${e.message}`]);
+                    reader.readAsArrayBuffer(file);
+                });
+            });
+
+            worker.onmessage = (event) => {
+                const { importedData, startYear, numYears } = event.data;
+                if (importedData) {
+                    state.data = importedData;
+                    state.startYear = startYear;
+                    state.numYears = numYears;
+                    autoCalculate();
+                    saveStateToLocal();
+                    renderAll();
+                    showNotification('Data berhasil diimpor!', 'success');
+                }
+                showSpinner(false);
+                worker.terminate();
+            };
+            worker.onerror = (event) => {
+                showNotification(`Gagal mengimpor file: ${event.message}`, 'error');
+                showSpinner(false);
+                worker.terminate();
+            };
+            worker.postMessage({ file });
+        }
+
+
+        /**
+         * Export data ke Excel.
+         */
+        function handleExportExcel() {
+            showSpinner(true);
+            const worker = createWorker(() => {
+                const wb = XLSX.utils.book_new();
+                const years = Array.from({ length: state.numYears }, (_, i) => state.startYear + i);
+                const ratioData = calculateRatios();
+                const allRatios = [].concat(...Object.values(ratioData));
+
+                const createSheet = (data, items, name) => {
+                    const header = ['Pos Akun', ...years];
+                    const rows = items.map(item => {
+                        const row = [item.label];
+                        years.forEach((year, i) => {
+                            const yearKey = `year_${i}`;
+                            const value = data[yearKey]?.[item.id] || '';
+                            row.push(value);
+                        });
+                        return row;
+                    });
+                    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+                    XLSX.utils.book_append_sheet(wb, ws, name);
+                };
+
+                // Sheet Neraca
+                createSheet(state.data.neraca, CONFIG.FINANCIAL_ITEMS.neraca, 'Neraca');
+                // Sheet Laba Rugi
+                createSheet(state.data.labaRugi, CONFIG.FINANCIAL_ITEMS.labaRugi, 'Laba Rugi');
+                // Sheet Arus Kas
+                createSheet(state.data.arusKas, CONFIG.FINANCIAL_ITEMS.arusKas, 'Arus Kas');
+
+                // Sheet Rasio
+                const ratioHeader = ['Rasio', ...years, `Benchmark (${state.industry})`];
+                const ratioRows = Object.keys(CONFIG.RATIO_DESCRIPTIONS).map(ratioName => {
+                    const row = [CONFIG.RATIO_DESCRIPTIONS[ratioName]];
+                    years.forEach((year, i) => {
+                        const ratioValue = allRatios[i][ratioName] || 0;
+                        row.push(ratioValue.toFixed(4));
+                    });
+                    row.push(CONFIG.INDUSTRIES[state.industry][ratioName].toFixed(4));
+                    return row;
+                });
+                const ratioWs = XLSX.utils.aoa_to_sheet([ratioHeader, ...ratioRows]);
+                XLSX.utils.book_append_sheet(wb, ratioWs, 'Rasio');
+
+                // Sheet Narasi
+                const narrativeWs = XLSX.utils.aoa_to_sheet([['Narasi Analisis'], [state.narrative]]);
+                XLSX.utils.book_append_sheet(wb, narrativeWs, 'Narasi');
+
+                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+                return wbout;
+            });
+
+            worker.onmessage = (event) => {
+                const wbout = event.data;
+                const blob = new Blob([s2ab(atob(wbout))], { type: 'application/octet-stream' });
+                saveAs(blob, 'Laporan_Keuangan.xlsx');
+                showSpinner(false);
+                worker.terminate();
+            };
+            worker.onerror = (event) => {
+                showNotification('Gagal mengekspor file Excel.', 'error');
+                showSpinner(false);
+                worker.terminate();
+            };
+            worker.postMessage({});
+        }
+
+        /**
+         * Helper untuk konversi string biner ke array buffer.
+         */
+        function s2ab(s) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < s.length; i++) {
+                view[i] = s.charCodeAt(i) & 0xFF;
+            }
+            return buf;
+        }
+
+        /**
+         * Unduh file.
+         */
+        function saveAs(blob, fileName) {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+            showNotification('File berhasil diunduh!', 'success');
+        }
+
+        /**
+         * Ekspor data ke PDF.
+         */
+        function handleExportPdf() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const years = Array.from({ length: state.numYears }, (_, i) => state.startYear + i);
+            const ratioData = calculateRatios();
+            const allRatios = [].concat(...Object.values(ratioData));
+
+            let y = 10;
+            const drawTable = (title, headers, body) => {
+                doc.text(title, 10, y);
+                y += 5;
+                doc.autoTable({
+                    startY: y,
+                    head: [headers],
+                    body: body,
+                    theme: 'grid',
+                    headStyles: { fillColor: [44, 62, 80] },
+                    styles: { font: 'helvetica', fontSize: 8 },
+                });
+                y = doc.autoTable.previous.finalY + 10;
+            };
+
+            // Neraca
+            const neracaHeaders = ['Pos Akun', ...years.map(y => y.toString())];
+            const neracaBody = CONFIG.FINANCIAL_ITEMS.neraca.map(item => {
+                const row = [item.label];
+                years.forEach((year, i) => {
+                    const yearKey = `year_${i}`;
+                    const value = state.data.neraca[yearKey]?.[item.id] || '';
+                    row.push(value !== '' ? formatCurrency(value) : '-');
+                });
+                return row;
+            });
+            drawTable('Neraca', neracaHeaders, neracaBody);
+
+            // Laba Rugi
+            const lrHeaders = ['Pos Akun', ...years.map(y => y.toString())];
+            const lrBody = CONFIG.FINANCIAL_ITEMS.labaRugi.map(item => {
+                const row = [item.label];
+                years.forEach((year, i) => {
+                    const yearKey = `year_${i}`;
+                    const value = state.data.labaRugi[yearKey]?.[item.id] || '';
+                    row.push(value !== '' ? formatCurrency(value) : '-');
+                });
+                return row;
+            });
+            drawTable('Laba Rugi', lrHeaders, lrBody);
+
+            // Rasio
+            const ratioHeaders = ['Rasio', ...years.map(y => y.toString()), `Benchmark (${state.industry})`];
+            const ratioBody = Object.keys(CONFIG.RATIO_DESCRIPTIONS).map(ratioName => {
+                const row = [CONFIG.RATIO_DESCRIPTIONS[ratioName]];
+                years.forEach((year, i) => {
+                    const ratioValue = allRatios[i][ratioName] || 0;
+                    row.push(`${(ratioValue * 100).toFixed(2)}%`);
+                });
+                row.push(`${(CONFIG.INDUSTRIES[state.industry][ratioName] * 100).toFixed(2)}%`);
+                return row;
+            });
+            drawTable('Rasio Keuangan', ratioHeaders, ratioBody);
+
+            // Narasi
+            doc.addPage();
+            doc.text('Narasi Analisis', 10, 10);
+            const narasiText = state.narrative.split('\n').filter(line => line.trim() !== '');
+            doc.autoTable({
+                startY: 15,
+                body: narasiText.map(line => [line]),
+                theme: 'plain'
+            });
+
+            doc.save('Laporan_Analisis_Keuangan.pdf');
+            showNotification('File PDF berhasil diunduh!', 'success');
+        }
+
+        /**
+         * Ekspor data ke Word.
+         */
+        async function handleExportWord() {
+            // Implementasi docx di sini. Membutuhkan backend untuk membaca template, jadi kita buat versi sederhana.
+            const years = Array.from({ length: state.numYears }, (_, i) => state.startYear + i);
+            const ratioData = calculateRatios();
+            const allRatios = [].concat(...Object.values(ratioData));
+
+            const tableToAoa = (sheetName) => {
+                const items = CONFIG.FINANCIAL_ITEMS[sheetName];
+                const header = ['Pos Akun', ...years];
+                const body = items.map(item => {
+                    const row = [item.label];
+                    years.forEach((year, i) => {
+                        const yearKey = `year_${i}`;
+                        const value = state.data[sheetName][yearKey]?.[item.id] || 0;
+                        row.push(formatCurrency(value));
+                    });
+                    return row;
+                });
+                return [header, ...body];
+            };
+
+            const ratiosToAoa = () => {
+                const header = ['Rasio', ...years, `Benchmark (${state.industry})`];
+                const body = Object.keys(CONFIG.RATIO_DESCRIPTIONS).map(ratioName => {
+                    const row = [CONFIG.RATIO_DESCRIPTIONS[ratioName]];
+                    years.forEach((year, i) => {
+                        const ratioValue = allRatios[i][ratioName] || 0;
+                        row.push(`${(ratioValue * 100).toFixed(2)}%`);
+                    });
+                    row.push(`${(CONFIG.INDUSTRIES[state.industry][ratioName] * 100).toFixed(2)}%`);
+                    return row;
+                });
+                return [header, ...body];
+            };
+
+            const docContent = `
+    <h1>Laporan Analisis Keuangan</h1>
+    <h2>Neraca</h2>
+    <table border="1">
+        ${tableToAoa('neraca').map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+    </table>
+    <h2>Laporan Laba Rugi</h2>
+    <table border="1">
+        ${tableToAoa('labaRugi').map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+    </table>
+    <h2>Laporan Arus Kas</h2>
+    <table border="1">
+        ${tableToAoa('arusKas').map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+    </table>
+    <h2>Rasio Keuangan</h2>
+    <table border="1">
+        ${ratiosToAoa().map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+    </table>
+    <h2>Narasi Analisis</h2>
+    <p>${state.narrative.replace(/\n/g, '<br>')}</p>
+    `;
+
+            const blob = new Blob([docContent], { type: 'application/msword' });
+            saveAs(blob, 'Laporan_Analisis_Keuangan.doc');
+            showNotification('File Word berhasil diunduh!', 'success');
+        }
+
+        /**
+         * Mengunduh template Excel.
+         */
+        function downloadExcelTemplate() {
+            const wb = XLSX.utils.book_new();
+            const years = Array.from({ length: state.numYears }, (_, i) => state.startYear + i);
+            const header = ['Pos Akun', ...years];
+
+            ['neraca', 'labaRugi', 'arusKas'].forEach(sheetName => {
+                const items = CONFIG.FINANCIAL_ITEMS[sheetName];
+                const rows = items.map(item => [item.label, ...Array(years.length).fill(0)]);
+                const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+                XLSX.utils.book_append_sheet(wb, ws, { 'neraca': 'Neraca', 'labaRugi': 'Laba Rugi', 'arusKas': 'Arus Kas' }[sheetName]);
+            });
+
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+            const blob = new Blob([s2ab(atob(wbout))], { type: 'application/octet-stream' });
+            saveAs(blob, 'Template_Analisis_Keuangan.xlsx');
+        }
+
+        /**
+         * Menggenerate narasi otomatis.
+         */
+        function generateNarasiOtomatis() {
+            const ratios = calculateRatios();
+            const lastYearRatios = ratios.profitability[state.numYears - 1] || {};
+            const benchmark = CONFIG.INDUSTRIES[state.industry];
+
+            const generateRatioText = (ratioName, value, benchmarkValue) => {
+                const isGood = value > benchmarkValue;
+                const status = isGood ? 'lebih baik dari' : 'di bawah';
+                return `Rasio ${CONFIG.RATIO_DESCRIPTIONS[ratioName]} berada di ${isGood ? 'level yang baik' : 'level yang mengkhawatirkan'} (${(value * 100).toFixed(2)}%), yang ${status} benchmark industri (${(benchmarkValue * 100).toFixed(2)}%).`;
+            };
+
+            let narasi = "Analisis Kinerja Keuangan Perusahaan:\n\n";
+
+            narasi += "--- Ringkasan Rasio Profitabilitas ---\n";
+            ['GPM', 'ROE', 'ROA', 'NPM', 'OPM'].forEach(ratio => {
+                narasi += `- ${generateRatioText(ratio, lastYearRatios[ratio], benchmark[ratio])}\n`;
+            });
+
+            narasi += "\n--- Ringkasan Rasio Solvabilitas ---\n";
+            ['DER', 'DTA', 'ICR'].forEach(ratio => {
+                narasi += `- ${generateRatioText(ratio, lastYearRatios[ratio], benchmark[ratio])}\n`;
+            });
+
+            // Tambahan analisis tren
+            const firstYearLR = state.data.labaRugi.year_0 || {};
+            const lastYearLR = state.data.labaRugi[`year_${state.numYears - 1}`] || {};
+            if (firstYearLR.labaBersih && lastYearLR.labaBersih) {
+                if (lastYearLR.labaBersih > firstYearLR.labaBersih) {
+                    narasi += "\nSecara keseluruhan, Laba Bersih perusahaan menunjukkan tren yang meningkat selama periode ini.\n";
+                } else {
+                    narasi += "\nSecara keseluruhan, Laba Bersih perusahaan menunjukkan tren yang menurun selama periode ini.\n";
+                }
+            }
+
+            document.getElementById('narrative-textarea').value = narasi;
+            state.narrative = narasi;
+            saveStateToLocal();
+            showNotification('Narasi otomatis berhasil digenerate!', 'success');
+        }
+
+        // === Event Listeners & Inisialisasi ===
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStateFromLocal();
+
+            // Inisialisasi UI dari state yang tersimpan
+            document.getElementById('start-year').value = state.startYear;
+            document.getElementById('num-years').value = state.numYears;
+            document.getElementById('industry-select').value = state.industry;
+            document.getElementById('narrative-textarea').value = state.narrative;
+
+            // Terapkan state collapsed sections
+            Object.keys(state.collapsedSections).forEach(id => {
+                const sectionBody = document.getElementById(id + '-section');
+                if (sectionBody && state.collapsedSections[id]) {
+                    sectionBody.classList.add('collapsed');
+                }
+            });
+
+            renderAll();
+
+            // Event listener untuk tombol tab
+            document.querySelectorAll('.nav-links button').forEach(button => {
+                button.addEventListener('click', () => {
+                    document.querySelectorAll('.nav-links button').forEach(btn => btn.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+                    button.classList.add('active');
+                    const targetId = button.id.replace('tab-', '');
+                    if (targetId === 'help') {
+                        openModal('help-modal');
+                        return;
+                    }
+                    document.getElementById(`${targetId}-tab`).classList.add('active');
+
+                    if (targetId === 'dashboard') {
+                        renderAll(); // Render ulang grafik saat tab dashboard aktif
+                    }
+                    if (targetId === 'analysis') {
+                        renderAnalysisSummary();
+                    }
+                });
+            });
+
+            // Dark Mode Toggle
+            document.getElementById('dark-mode-toggle').addEventListener('click', toggleDarkMode);
+
+            // Pengaturan
+            document.getElementById('apply-settings-btn').addEventListener('click', () => {
+                state.startYear = parseInt(document.getElementById('start-year').value);
+                state.numYears = parseInt(document.getElementById('num-years').value);
+                state.industry = document.getElementById('industry-select').value;
+                state.data = JSON.parse(JSON.stringify(INITIAL_DATA)); // Reset data
+                renderAll();
+                saveStateToLocal();
+                showNotification('Pengaturan berhasil diperbarui!', 'success');
+            });
+
+            document.getElementById('load-dummy-btn').addEventListener('click', () => {
+                state.data = {
+                    neraca: {
+                        year_0: { kas: 50000000, piutang: 120000000, persediaan: 80000000, asetLancarLainnya: 50000000, asetTetap: 500000000, asetTidakBerwujud: 10000000, asetLainnya: 20000000, utangUsaha: 60000000, utangPendekLainnya: 40000000, utangJangkaPanjang: 200000000, modalDisetor: 300000000, saldoLaba: 160000000 },
+                        year_1: { kas: 60000000, piutang: 130000000, persediaan: 90000000, asetLancarLainnya: 55000000, asetTetap: 520000000, asetTidakBerwujud: 11000000, asetLainnya: 22000000, utangUsaha: 65000000, utangPendekLainnya: 45000000, utangJangkaPanjang: 210000000, modalDisetor: 320000000, saldoLaba: 248000000 },
+                        year_2: { kas: 70000000, piutang: 140000000, persediaan: 100000000, asetLancarLainnya: 60000000, asetTetap: 540000000, asetTidakBerwujud: 12000000, asetLainnya: 24000000, utangUsaha: 70000000, utangPendekLainnya: 50000000, utangJangkaPanjang: 220000000, modalDisetor: 340000000, saldoLaba: 326000000 },
+                        year_3: { kas: 80000000, piutang: 150000000, persediaan: 110000000, asetLancarLainnya: 65000000, asetTetap: 560000000, asetTidakBerwujud: 13000000, asetLainnya: 26000000, utangUsaha: 75000000, utangPendekLainnya: 55000000, utangJangkaPanjang: 230000000, modalDisetor: 360000000, saldoLaba: 419000000 },
+                        year_4: { kas: 90000000, piutang: 160000000, persediaan: 120000000, asetLancarLainnya: 70000000, asetTetap: 580000000, asetTidakBerwujud: 14000000, asetLainnya: 28000000, utangUsaha: 80000000, utangPendekLainnya: 60000000, utangJangkaPanjang: 240000000, modalDisetor: 380000000, saldoLaba: 520000000 }
+                    },
+                    labaRugi: {
+                        year_0: { penjualanBersih: 1000000000, bebanPokokPenjualan: 600000000, bebanUmum: 150000000, bebanBunga: 20000000, bebanPajak: 30000000 },
+                        year_1: { penjualanBersih: 1100000000, bebanPokokPenjualan: 650000000, bebanUmum: 160000000, bebanBunga: 22000000, bebanPajak: 35000000 },
+                        year_2: { penjualanBersih: 1200000000, bebanPokokPenjualan: 700000000, bebanUmum: 170000000, bebanBunga: 24000000, bebanPajak: 40000000 },
+                        year_3: { penjualanBersih: 1300000000, bebanPokokPenjualan: 750000000, bebanUmum: 180000000, bebanBunga: 26000000, bebanPajak: 45000000 },
+                        year_4: { penjualanBersih: 1400000000, bebanPokokPenjualan: 800000000, bebanUmum: 190000000, bebanBunga: 28000000, bebanPajak: 50000000 }
+                    },
+                    arusKas: {
+                        year_0: { kasAwal: 50000000, kasOperasi: 100000000, kasInvestasi: -50000000, kasPendanaan: -50000000 },
+                        year_1: { kasAwal: 50000000, kasOperasi: 120000000, kasInvestasi: -60000000, kasPendanaan: -50000000 },
+                        year_2: { kasAwal: 60000000, kasOperasi: 130000000, kasInvestasi: -65000000, kasPendanaan: -45000000 },
+                        year_3: { kasAwal: 70000000, kasOperasi: 140000000, kasInvestasi: -70000000, kasPendanaan: -40000000 },
+                        year_4: { kasAwal: 80000000, kasOperasi: 150000000, kasInvestasi: -75000000, kasPendanaan: -45000000 }
+                    }
+                };
+                autoCalculate();
+                saveStateToLocal();
+                renderAll();
+                showNotification('Data dummy berhasil dimuat!', 'success');
+            });
+
+            // Manajemen data
+            document.getElementById('file-input').addEventListener('change', handleImportExcel);
+            document.getElementById('export-excel-btn').addEventListener('click', handleExportExcel);
+            document.getElementById('export-pdf-btn').addEventListener('click', handleExportPdf);
+            document.getElementById('export-word-btn').addEventListener('click', handleExportWord);
+            document.getElementById('download-template-btn').addEventListener('click', downloadExcelTemplate);
+            document.getElementById('save-snapshot-btn').addEventListener('click', () => {
+                const dataStr = JSON.stringify(state);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                saveAs(blob, 'analisis_keuangan_snapshot.json');
+            });
+            document.getElementById('load-snapshot-input').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        state = JSON.parse(e.target.result);
+                        autoCalculate();
+                        renderAll();
+                        saveStateToLocal();
+                        showNotification('Snapshot berhasil dimuat!', 'success');
+                    } catch (error) {
+                        showNotification('Gagal memuat snapshot. File tidak valid.', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            });
+            document.getElementById('reset-data-btn').addEventListener('click', () => {
+                if (confirm('Apakah Anda yakin ingin mereset semua data?')) {
+                    state.data = JSON.parse(JSON.stringify(INITIAL_DATA));
+                    state.narrative = '';
+                    state.inputErrors = {};
+                    state.balanceSheetError = {};
+                    autoCalculate();
+                    renderAll();
+                    saveStateToLocal();
+                    showNotification('Data berhasil direset!', 'success');
+                }
+            });
+
+            // Dashboard - Toggling chart
+            document.querySelectorAll('[data-chart-category]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const category = btn.dataset.chartCategory;
+                    state.visibleCharts[category] = !state.visibleCharts[category];
+                    renderCharts();
+                    saveStateToLocal();
+                });
+            });
+
+            // Analisis
+            document.getElementById('generate-narasi-btn').addEventListener('click', generateNarasiOtomatis);
+            document.getElementById('narrative-textarea').addEventListener('input', debounce(() => {
+                state.narrative = document.getElementById('narrative-textarea').value;
+                saveStateToLocal();
+            }, CONFIG.DEBOUNCE_DELAY));
+
+            // Awal
+            autoCalculate();
+        });
+
+    </script>
+</body>
+
+</html>
